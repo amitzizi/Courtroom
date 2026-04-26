@@ -36,9 +36,6 @@ def get_or_create_camera():
     return camera
 
 def create_courtroom_flythrough(camera):
-    if camera.animation_data:
-        camera.animation_data_clear()
-    
     scene = bpy.context.scene
     
     keyframes = [
