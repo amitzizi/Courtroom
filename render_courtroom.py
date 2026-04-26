@@ -59,12 +59,6 @@ def create_courtroom_flythrough(camera):
         camera.rotation_euler = rotation
         camera.keyframe_insert(data_path="rotation_euler", frame=frame)
     
-    for fcurve in camera.animation_data.action.fcurves:
-        for keyframe in fcurve.keyframe_points:
-            keyframe.interpolation = 'BEZIER'
-            keyframe.handle_left_type = 'AUTO'
-            keyframe.handle_right_type = 'AUTO'
-    
     print("Camera keyframes created")
 
 def set_camera_properties(camera):
