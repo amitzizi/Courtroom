@@ -2,13 +2,14 @@
 Blender Courtroom Cinematic Render Script
 ==========================================
 This script creates a cinematic flythrough of your courtroom with smooth camera keyframing.
-Run this in Blender's Python console or as a script.
+Renders to PNG image sequence (more reliable than video codec).
 
 Usage:
     1. Open DraftCourt.blend in Blender
     2. Go to Scripting workspace
     3. Create NEW text file, paste this code
     4. Run the script (Alt+P)
+    5. After rendering, convert images to video using FFmpeg or Blender's Video Sequence Editor
 """
 
 import bpy
@@ -22,7 +23,7 @@ RENDER_RESOLUTION = (1920, 1080)
 FPS = 24
 DURATION_SECONDS = 90
 TOTAL_FRAMES = DURATION_SECONDS * FPS
-OUTPUT_PATH = "//render_output.mp4"
+OUTPUT_PATH = "//render_frames/"  # Will create PNG sequence
 RENDER_ENGINE = "CYCLES"
 RENDER_SAMPLES = 128
 USE_DENOISER = True
@@ -39,19 +40,23 @@ def setup_render_settings():
     scene.render.fps = FPS
     scene.frame_end = TOTAL_FRAMES
     
+    # Output to PNG sequence (no codec issues)
     scene.render.filepath = OUTPUT_PATH
-    scene.render.image_settings.file_format = 'FFMPEG'
-    scene.render.image_settings.ffmpeg_codec = 'H264'
-    scene.render.image_settings.ffmpeg_quality = 100
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.image_settings.color_mode = 'RGBA'
+    scene.render.image_settings.compression = 15
     
     scene.render.engine = RENDER_ENGINE
     
+    # Cycles settings
     if RENDER_ENGINE == "CYCLES":
         scene.cycles.samples = RENDER_SAMPLES
         scene.cycles.use_denoiser = USE_DENOISER
         scene.cycles.use_adaptive_sampling = True
+        scene.cycles.adaptive_threshold = 0.01
     
     print(f"✓ Render settings configured: {RENDER_RESOLUTION[0]}x{RENDER_RESOLUTION[1]} @ {FPS}fps")
+    print(f"✓ Output: PNG sequence to {OUTPUT_PATH}")
 
 # ====================
 # CREATE/GET CAMERA
@@ -82,6 +87,8 @@ def create_courtroom_flythrough(camera):
     
     scene = bpy.context.scene
     
+    # Keyframes: (frame, location, rotation)
+    # Adjust these based on your courtroom dimensions
     keyframes = [
         (0, Vector((0, -30, 3)), Vector((math.radians(0), 0, 0))),
         (int(TOTAL_FRAMES * 0.15), Vector((5, -20, 4)), Vector((math.radians(5), 0, math.radians(10)))),
@@ -100,6 +107,7 @@ def create_courtroom_flythrough(camera):
         camera.rotation_euler = rotation
         camera.keyframe_insert(data_path="rotation_euler", frame=frame)
     
+    # Smooth interpolation
     for fcurve in camera.animation_data.action.fcurves:
         for keyframe in fcurve.keyframe_points:
             keyframe.interpolation = 'BEZIER'
@@ -109,7 +117,7 @@ def create_courtroom_flythrough(camera):
     print(f"✓ Created {len(keyframes)} camera keyframes with smooth interpolation")
 
 # ====================
-# SET FOCAL LENGTH
+# SET CAMERA PROPERTIES
 # ====================
 def set_camera_properties(camera):
     """Configure camera lens properties"""
@@ -118,17 +126,18 @@ def set_camera_properties(camera):
     print(f"✓ Camera focal length set to 50mm")
 
 # ====================
-# RENDER VIDEO
+# RENDER
 # ====================
-def render_video():
-    """Render the final video"""
+def render_animation():
+    """Render animation to PNG sequence"""
     scene = bpy.context.scene
     scene.frame_set(0)
     
-    print(f"\n{'='*50}")
+    print(f"\n{'='*60}")
     print(f"Starting render: {TOTAL_FRAMES} frames @ {FPS}fps")
     print(f"Duration: {TOTAL_FRAMES / FPS} seconds")
-    print(f"{'='*50}\n")
+    print(f"Output: PNG sequence")
+    print(f"{'='*60}\n")
     
     bpy.ops.render.render(animation=True)
     print(f"\n✓ Render complete!")
@@ -137,19 +146,23 @@ def render_video():
 # MAIN
 # ====================
 def main():
-    print("\n" + "="*50)
+    print("\n" + "="*60)
     print("BLENDER COURTROOM CINEMATIC RENDER")
-    print("="*50 + "\n")
+    print("="*60 + "\n")
     
     setup_render_settings()
     camera = get_or_create_camera()
     set_camera_properties(camera)
     create_courtroom_flythrough(camera)
-    render_video()
+    render_animation()
     
-    print("\n" + "="*50)
-    print("Process complete!")
-    print("="*50)
+    print("\n" + "="*60)
+    print("Render complete! Frames saved to: render_frames/")
+    print("\nTo create video from PNG sequence:")
+    print("1. Use Video Sequence Editor in Blender")
+    print("2. Or use FFmpeg command:")
+    print("   ffmpeg -framerate 24 -i render_frames/####.png -c:v libx264 -crf 23 output.mp4")
+    print("="*60)
 
 if __name__ == "__main__":
     main()
